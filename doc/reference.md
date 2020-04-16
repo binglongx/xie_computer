@@ -20,8 +20,8 @@ Bit index: |             |1|0|
 
 Assembly Instructions
 =============================
-// move instructions
-```
+>>> // move instructions
+```c++
 MOV	reg, num // reg <- num			// MOV RB, 42
 MOV	reg1, reg2	// reg1 <- reg2			// MOV RA, RB
 LDS	reg, mem	// reg <- mem			// LDS RC, [0]
@@ -35,7 +35,7 @@ STB	reg, [reg]	// reg_low8bits -> [reg]// STB RD, [RC] ; to mem location
 ```
 
 // arithmetic instructions
-```
+```c++
 ADD	reg1, reg2	// reg1 <- reg1+ reg2		// ADD RA, RB
 ADD	reg, num	// reg <- reg + num		// ADD RA, 10
 SUB	reg1, reg2	// reg1 <- reg1 - reg2		// SUB RC, RD
@@ -51,7 +51,7 @@ DEC	reg		// reg <- reg - 1			// DEC RC
 ```
 
 // logical instructions
-```
+```c++
 AND	reg1, reg2	// reg1 <- reg1 & reg2		// AND RA, RB
 AND	reg, num	// reg <- reg & num		// AND RA, 0
 OR_	reg1, reg2	// reg1 <- reg1 | reg2		// OR_ RA, RB
@@ -83,7 +83,7 @@ RET			// POP PC
 HLT			// halt everything
 ```
 
-```
+```c++
 PSH	reg		// SP decreases by 2; Store reg into [SP].
 PSH 	num 		// SP decreases by 2; Store num into [SP].
 POP	reg		// load [SP] to reg; SP increases by 2.
@@ -100,7 +100,7 @@ Bit index: |    8     |1|    7    |       16        |
 f = flag of operand2 type, 0==reg; 1==num
 
 // opcode table 8-bit (hex)
-```
+```c++
 MOV 01
 LDS 02
 STS 03
@@ -130,7 +130,7 @@ SHL 1A
 SHR 1B
 ```
 // register table 8-bit (hex)
-```
+```c++
 RA 00
 RB 01
 RC 02
@@ -143,7 +143,7 @@ SR 12
 ```
 Machine Code Examples
 Examples: 
-```
+```c++
 MOV RA, RB			01 00 00 01
 JMP [255]			11 80 00 FF
 JPL [900]			10 80 03 84
