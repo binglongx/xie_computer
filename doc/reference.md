@@ -1,5 +1,6 @@
 Registers: 16-bit
 =============================
+```
 RA: Register A	: RA-RF: general purpose registers
 RB: Register B
 RC: Register C
@@ -16,11 +17,11 @@ Fields:    |             |n|z|
            +-------------+-+-+
 Bit index: |             |1|0|
            +-------------+-+-+
-
+```
 
 Assembly Instructions
 =============================
->>> // move instructions
+// move instructions
 ```c++
 MOV	reg, num // reg <- num			// MOV RB, 42
 MOV	reg1, reg2	// reg1 <- reg2			// MOV RA, RB
@@ -92,11 +93,13 @@ POP	reg		// load [SP] to reg; SP increases by 2.
 Machine Code Definition
 =============================
 // overall structure 32-bit
+```
            +----------+-+---------+-----------------+
 Fields:    |  opcode  |f| operand1|    operand2     |
            +----------+-+---------+-----------------+
 Bit index: |    8     |1|    7    |       16        |
            +----------+-+---------+-----------------+
+```
 f = flag of operand2 type, 0==reg; 1==num
 
 // opcode table 8-bit (hex)
@@ -144,21 +147,23 @@ SR 12
 Machine Code Examples
 Examples: 
 ```c++
-MOV RA, RB			01 00 00 01
-JMP [255]			11 80 00 FF
-JPL [900]			10 80 03 84
-STS RC, [RD]		18 02 00 03
+MOV RA, RB       01 00 00 01
+JMP [255]        11 80 00 FF
+JPL [900]        10 80 03 84
+STS RC, [RD]     18 02 00 03
 ```
 
 Memory Layout
 =============================
+```
 0x0000: data start here
 0x1000: instructions start here
 0x2000: stack bottom is here. stack grows backwards to lower locations.
+```
 
 Input/Output
 =============================
-0x3000: Display area in memory. This is an 80x25 characters display. The first row of characters
-	In display should be Stored in 0x3000-0x304F, second row 0x3050-0x309F, 
-… Total memory block: 0x3000-0x37CF
+0x3000: 
+Display area in memory. This is an 80x25 characters display. The first row of characters. In display should be Stored in 0x3000-0x304F, second row 0x3050-0x309F. Total memory block: 0x3000-0x37CF
+
 0x4000: Input area in memory. The first short tells you how many chars(N) are available in this area from the keyboard. Starting from 0x4002 there is an N amount of chars, without terminator null char.
