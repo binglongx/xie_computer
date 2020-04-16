@@ -90,6 +90,11 @@ PSH 	num 		// SP decreases by 2; Store num into [SP].
 POP	reg		// load [SP] to reg; SP increases by 2.
 ```
 
+// keyboard
+```
+KBD         // get the input area, an xstring when user press enter if user press enter get xstring from input area
+```
+
 Machine Code Definition
 =============================
 // overall structure 32-bit
