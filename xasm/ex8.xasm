@@ -1,0 +1,12 @@
+	MOV RA, 1
+	MOV RB, 1
+	LOD RC, [0]
+loop:
+	MUL RB, RA
+	CMP RA, RC
+	JPE [done]
+	INC RA
+	JMP [loop]
+done:
+	STO RB, [2]
+	HLT

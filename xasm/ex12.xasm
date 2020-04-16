@@ -1,0 +1,22 @@
+    MOV RA, '0'
+    MOV RB, 0x3000
+    MOV RC, 2000
+    CLL [Fill]
+    MOV RA, '1'
+    MOV RB, 80
+    ADD RB, 0x3000
+    MOV RC, 80
+    CLL [Fill]
+    HLT
+
+Fill: // RA = fill char, RB = start location, RC = number of chars to fill
+    MOV RD, RB
+    ADD RD, RC
+Loop_Fill:
+    CMP RB, RD
+    JPE [End_Fill]
+    STB RA, [RB]
+    INC RB
+    JMP [Loop_Fill]
+End_Fill:
+    RET

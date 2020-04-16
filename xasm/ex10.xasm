@@ -1,0 +1,19 @@
+    MOV RA, 10794 // ascii code for “**”
+    MOV RB, 8224 // ascii code for “  “
+    MOV RC, 12288 // decimal for 0x3000
+    MOV RD, 12367 // the location that we will start adding spaces
+    MOV RE, 14288 // stop location
+loop:
+    CMP RD, RC // i < 12368?
+    JPL [space]
+    STO RA, [RC]
+    JMP [loop_end]
+space:
+    STO RB, [RC]
+loop_end:
+    CMP RE, RC
+    JPE [end]
+    ADD RC, 2
+    JMP [loop]
+end:
+    HLT

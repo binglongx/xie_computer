@@ -1,0 +1,11 @@
+    LOD RA, [0]
+	MOV RB, 0
+	CMP RA, RB
+	JPL [negative]
+	JMP [end]
+negative:
+	SUB RB, RA
+	MOV RA, RB
+end:
+	STO RA, [2]
+	HLT

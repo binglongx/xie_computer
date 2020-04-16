@@ -1,0 +1,13 @@
+    // add 1 through 100
+	MOV RA, 0	// accumulation: total = 0
+    MOV RC, 1	// loop count: i=1
+	MOV RD, 100
+loop:
+	ADD RA, RC	// total += i
+	CMP RC, RD	// i==100?
+	JPE [done]
+	INC RC
+	JMP [loop]
+done:
+	STO RA, [1000]
+	HLT

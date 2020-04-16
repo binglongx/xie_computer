@@ -1,0 +1,21 @@
+main:// main function starts here
+	LOD RD, [0] // load [0]
+	CLL [abs] // call abs function
+	STO RA, [2] // put result in [2]
+	LOD RD, [4]
+	CLL [abs]
+	STO RA, [6]
+	//RET
+	HLT // nobody called main, so don’t use RET.
+
+abs: //change RD to parameter before function call
+	MOV RB, 0
+	CMP RD, RB
+	JPL [negative]
+	MOV RA, RD
+	JMP [func_end]
+negative:
+	SUB RB, RD
+	MOV RA, RB
+func_end:
+	RET

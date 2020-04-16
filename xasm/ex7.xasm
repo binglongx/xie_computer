@@ -1,0 +1,21 @@
+	MOV RC, 1	// loop count: i=1
+	MOV RD, 5
+loop:
+	PSH RC
+	CMP RC, RD	// i==100?
+	JPE [done]
+	INC RC
+	JMP [loop]
+done:
+	MOV RC, 1	// loop count: i=1
+	MOV RE, 0
+loop2:
+	POP RA
+	ADD RE, RA
+CMP RC, RD	// i==100?
+	JPE [done2]
+	INC RC
+	JMP [loop2]
+done2:
+	STO RE, [0]
+	HLT

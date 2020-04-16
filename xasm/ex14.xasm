@@ -1,0 +1,32 @@
+    CLL [string]
+    HLT
+
+string: // takes short in RA
+    MOV RC, 0 // how many digits
+    ADD RB, 2
+    MOV RE, RB
+    MOV RF, RB
+loop_string:
+    INC RC
+    MOV RD, RA
+    MOD RD, 10
+    ADD RD, '0'
+    STB RD, [RB]
+    CMP RA, 10
+    JPL [loop2_string]
+    DIV RA, 10
+    INC RB
+    JMP [loop_string]
+loop2_string:
+    CMP RB, RF
+    JPE [end_string]
+    LDB RA, [RB]
+    STB RA, [RE]
+    INC RE
+    DEC RB
+    JMP [loop2_string]
+end_string:
+    SUB RB, RC
+    SUB RB, 2
+    STS RC, [RB]
+    RET

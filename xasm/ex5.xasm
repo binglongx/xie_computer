@@ -1,0 +1,32 @@
+	// find the largest and least values of an array of length [10], first value at [12]
+	LOD RA, [10] // length of array
+	MOV RB, 1 // i = 1
+	LOD RC, [12] // current largest
+	STO RC, [0] // store it into memory
+	STO RC, [2] // also current least
+loop:
+	CMP RA, RB // i < arr_length?
+	JPL [end] // break loop
+	MOV RD, RB
+	MUL RD, 2 // 2*i
+	MOV RE, 10
+	ADD RD, RE
+	LOD RF, [RD]
+	LOD RC, [0]
+	CMP RC, RF // largest < current?
+	JPL [greater]
+	LOD RC, [2]
+	CMP RF, RC // current < least?
+	JPL [less]
+	JMP [next] // if equal, skip to next
+greater:
+	MOV RC, RF // largest = current
+	JMP [next]
+less:
+	STO RF, [2] // no more registers to store smallest
+next:
+	INC RB
+	JMP [loop] // iteration over
+end:
+	STO RC, [0] // store the largest into [0]
+	HLT

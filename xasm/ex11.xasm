@@ -1,0 +1,46 @@
+    MOV RA, 32
+    MOV RB, 'V'
+    MOV RC, 0x3000 // current pos in memory
+    MOV RD, 1 // how many A’s in each line
+    MOV RE, 39 // # of spaces in one half of the row
+Loop:
+    CLL [Fill]
+    ADD RD, 2
+    DEC RE
+    CMP RD, 51
+    JPE [Done]
+    JPL [Loop]
+Done:
+    HLT
+
+Fill:
+    MOV RF, 0 // index of how many charas in current loop
+Loop_Fill_S1:
+    CMP RF, RE
+    JPE [Loop_stop1]
+    STB RB, [RC]
+    INC RF
+    INC RC
+    JMP [Loop_Fill_S1]
+Loop_stop1:
+    MOV RF, 0
+Loop_Fill_A:
+    CMP RF, RD
+    JPE [Loop_stop2]
+    STB RA, [RC]
+    INC RF
+    INC RC
+    JMP [Loop_Fill_A]
+Loop_stop2:
+    MOV RF, 0
+Loop_Fill_S2:
+    CMP RF, RE
+    JPE [End_Fill]
+    STB RB, [RC]
+    INC RF
+    INC RC
+    JMP [Loop_Fill_S2]
+End_Fill:
+    INC RC
+    STB RB, [RC]
+    RET
