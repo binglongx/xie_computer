@@ -35,6 +35,7 @@ STB	reg, [reg]	// reg_low8bits -> [reg]// STB RD, [RC] ; to mem location
 ```
 
 // arithmetic instructions
+```
 ADD	reg1, reg2	// reg1 <- reg1+ reg2		// ADD RA, RB
 ADD	reg, num	// reg <- reg + num		// ADD RA, 10
 SUB	reg1, reg2	// reg1 <- reg1 - reg2		// SUB RC, RD
@@ -47,8 +48,10 @@ MOD	reg1, reg2 	// reg1 <- reg1 % reg2		// MOD RA, RB
 MOD	reg, num 	// reg <- reg % num		// MOD RA, 5
 INC	reg		// reg <- reg + 1			// INC RC
 DEC	reg		// reg <- reg - 1			// DEC RC
+```
 
 // logical instructions
+```
 AND	reg1, reg2	// reg1 <- reg1 & reg2		// AND RA, RB
 AND	reg, num	// reg <- reg & num		// AND RA, 0
 OR_	reg1, reg2	// reg1 <- reg1 | reg2		// OR_ RA, RB
@@ -60,8 +63,10 @@ SHL   reg, num	// reg  <- reg << num 		// SHL RA, 1
 SHL 	reg1, reg2  // reg1 <- reg1 << reg2 	// SHL RA, RB
 SHR   reg, num	// reg  <- reg >> num 		// SHR RA, 1
 SHR 	reg1, reg2  // reg1 <- reg1 >> reg2 	// SHR RA, RB
+```
 
 // program flow
+```c++
 CMP	reg1, reg2	
 CMP 	reg, num
 // SR bits set: Zero bit true if reg1==reg2 (reg==num); 
@@ -76,10 +81,13 @@ CLL	mem		// PSH PC, JMP [mem]
 CLL	reg		// PSH PC, JMP [reg]
 RET			// POP PC
 HLT			// halt everything
+```
 
+```
 PSH	reg		// SP decreases by 2; Store reg into [SP].
 PSH 	num 		// SP decreases by 2; Store num into [SP].
 POP	reg		// load [SP] to reg; SP increases by 2.
+```
 
 Machine Code Definition
 =============================
@@ -92,6 +100,7 @@ Bit index: |    8     |1|    7    |       16        |
 f = flag of operand2 type, 0==reg; 1==num
 
 // opcode table 8-bit (hex)
+```
 MOV 01
 LDS 02
 STS 03
@@ -119,8 +128,9 @@ LDB 18
 STB 19
 SHL 1A
 SHR 1B
-
+```
 // register table 8-bit (hex)
+```
 RA 00
 RB 01
 RC 02
@@ -130,13 +140,15 @@ RF 05
 PC 	// no code needed: PC never appears in machine code directly
 SP 11
 SR 12
-
+```
 Machine Code Examples
 Examples: 
+```
 MOV RA, RB			01 00 00 01
 JMP [255]			11 80 00 FF
 JPL [900]			10 80 03 84
 STS RC, [RD]		18 02 00 03
+```
 
 Memory Layout
 =============================
