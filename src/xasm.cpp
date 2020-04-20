@@ -294,9 +294,9 @@ bool assemble(SourceFile& source, const std::string& binFilePath)
         std::cout << "opc=0x"<< integer_as_hex((uint8_t)(opcode)) << "  f=" << flag << "  op1=" << operand1 << "  op2=" << operand2;
         auto disasmbled = disasemble_machine_code(code, label_map);
         if( !disasmbled.empty() )
-            std::cout << "\tDISASM: " << disasmbled << std::endl;
+            std::cout << "\t// " << disasmbled << std::endl;
         else
-            std::cout << "\tDISASM: " << "!! Invalid machine code" << std::endl;
+            std::cout << "\t// " << "!! Invalid machine code" << std::endl;
         instructions.push_back(code);
         return true;
     });

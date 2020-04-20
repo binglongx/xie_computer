@@ -288,7 +288,7 @@ int main(int argc, const char** argv)
     {
         int32_t instruction = ram.fetch_instruction(regs.PC);
         regs.print(); cout<<endl;
-        cout << " Instruction @" << integer_as_hex(regs.PC) << " " << integer_as_hex(ram.fetch_instruction(regs.PC)) << endl;
+        cout << " Instruction @" << integer_as_hex(regs.PC) << " " << integer_as_hex(instruction) << "  // " << disasemble_machine_code(instruction) << endl;
         bool halt = run_instruction(instruction, regs, ram);
         if (halt)
             break;
