@@ -1,0 +1,263 @@
+//change RC to parameter before function call, result will be in RA
+// Input parameters:
+//   RC: input number
+// Return value:
+//   RA: the absolute value
+// Example usage:
+//   MOV RC, -3
+//   CLL [abs]
+abs:
+	MOV RA, 0
+	CMP RC, RA
+	JPL [negative]
+	MOV RA, RC
+	JMP [func_end]
+negative:
+	SUB RA, RC
+func_end:
+	RET
+
+// reverse the string in place.
+// Input parameters:
+//   RC: number of chars
+//   RD: location of first char
+// Example usage:
+//   MOV RC, 3
+//   MOV RD, 0x3000
+//   CLL [reverse_string]
+reverse_string:
+    PSH RB
+    PSH RE
+    PSH RA
+    PSH RF
+    MOV RB, RC
+    DIV RB, 2
+    ADD RC, RD
+    SUB RC, 1
+    MOV RE, 0
+loop_reverse_string:
+    LDB RF, [RD]
+    LDB RA, [RC]
+    STB RF, [RC]
+    STB RA, [RD]
+    INC RD
+    DEC RC
+    INC RE
+    CMP RE, RB
+    JPL [loop_reverse_string]
+    POP RF
+    POP RA
+    POP RE
+    POP RB
+    RET
+    
+// reverse the xstring in place in [RC].
+//  RC: short: location of char count
+reverse_xstring:
+    PSH RD
+    MOV RD, RC
+    ADD RD, 2
+    LDS RC, [RC]
+    CLL [reverse_string]
+    POP RD
+    RET
+
+// find minimum of an array of shorts
+// Input parameters:
+//   RC: location of first value
+//   RD: how many elements
+// Return value:
+//   RA: minimum value
+// Example usage:
+//   MOV RC, 100
+//   MOV RD, 10
+//   CLL [find_min]
+find_min:
+    PSH RE
+    PSH RB
+    LDS RA, [RC]
+    MOV RE, RC
+    ADD RE, RD
+    SUB RE, 1
+loop_fmin:
+    LDS RB, [RC]
+    CMP RB, RA
+    JPL [less_fmin]
+    JMP [continue_fmin]
+less_fmin:
+    MOV RA, RB
+continue_fmin:
+    CMP RC, RE
+    JPE [end_fmin]
+    ADD RC, 2
+    JMP [loop_fmin]
+end_fmin:
+    POP RB
+    POP RE
+    RET
+
+// find maximum of an array of shorts
+// Input parameters:
+//   RC: location of first value
+//   RD: how many elements
+// Return value:
+//   RA: maximum value
+// Example usage:
+//   MOV RC, 100
+//   MOV RD, 10
+//   CLL [find_max]
+find_max:
+    PSH RE
+    PSH RB
+    LDS RA, [RC]
+    MOV RE, RC
+    ADD RE, RD
+    SUB RE, 1
+loop_fmin:
+    LDS RB, [RC]
+    CMP RA, RB
+    JPL [more_fmax]
+    JMP [continue_fmax]
+more_fmax:
+    MOV RA, RB
+continue_fmax:
+    CMP RC, RE
+    JPE [end_fmax]
+    ADD RC, 2
+    JMP [loop_fmax]
+end_fmax:
+    POP RB
+    POP RE
+    RET
+
+// convert a short to an xstring
+// Input parameters:
+//   RC: short to be converted
+//   RD: location of xstring in memory (digit count will be stored here)
+// Example usage:
+//   MOV RC, 49
+//   MOV RD, 0x3000
+//   CLL [short_to_xstring]
+short_to_xstring:
+    PSH RA
+    PSH RB
+	MOV RA, 1 // digit count
+    ADD RD, 2 // digit location
+loop_stxstring:
+    MOV RB, RC
+    MOD RB, 10
+    ADD RB, '0'
+    STB RB, [RD]
+    CMP RC, 10
+    JPL [end_stxstring]
+    DIV RC, 10
+    INC RA // digits += 1
+    INC RD // digit loc += 1
+    JMP [loop_stxstring]
+end_stxstring:
+    SUB RD, RA
+    SUB RD, 1
+    STS RA, [RD]
+    POP RB
+    POP RA
+    RET
+
+// convert a string to a short
+// Input parameters:
+//   RC: location of first char
+//   RD: location of last char
+// Return value:
+//   RA: the short
+// Example usage:
+//   MOV RC, 0x4000
+//   MOV RD, 0x4004
+//   CLL [string_to_short]
+string_to_short:
+    PSH RB
+    MOV RA, 0
+loop_stringts:
+    MUL RA, 10
+    LDB RB, [RC]
+    SUB RB, '0'
+    ADD RA, RB
+    CMP RC, RD
+    JPE [end_stringts]
+    INC RC
+    JMP [loop_stringts]
+end_stringts:
+    POP RB
+    RET
+
+// if character is uppercase then make lower
+// Input parameters:
+//   RC: character to lower
+// Example usage:
+//   MOV RC, 'A'
+//   CLL [lower]
+lower:
+    CMP RC, '['
+    JPL [less_lower]
+    JMP [ret_lower]
+ret_lower:
+    RET
+less_lower:
+    CMP RC, 'A'
+    JPL [ret_lower]
+    ADD RC, 32
+    RET
+
+// if character is lowercase then make upper
+// Input parameters:
+//   RC: character to upper
+// Example usage:
+//   MOV RC, 'a'
+//   CLL [upper]
+upper:
+    CMP RC, '{'
+    JPL [less_upper]
+    JMP [ret_upper]
+ret_upper:
+    RET
+less_upper:
+    CMP RC, 'a'
+    JPL [ret_upper]
+    SUB RC, 32
+    RET
+
+// fill memory area with a character
+// Input parameters:
+//   RC: character to fill with
+//   RD: first location to be filled
+//   RE: last location to be filled
+// Example usage:
+//   MOV RC, 'A'
+//   MOV RD, 0x3000
+//   MOV RE, 0x37CF
+//   CLL [fill_char]
+fill_char:
+// fill loop
+loop_fchar:
+    STB RD, RC
+    CMP RD, RE
+    JPE [end_fchar]
+    INC RD
+    JMP [loop_fchar]
+end_fchar:
+    RET
+
+// clear display area (0x3000 - 0x37CF)
+// Example usage:
+//   CLL [clear_display]
+clear_display:
+    PSH RC
+    PSH RD
+    PSH RE
+    MOV RC, 32
+    MOV RD, 0x3000
+    MOV RE, 0x37CF
+    CLL [fill_char]
+    POP RE
+    POP RD
+    POP RC
+    RET
+

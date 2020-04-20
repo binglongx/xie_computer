@@ -195,3 +195,7 @@ Input/Output
 Display area in memory. This is an 80x25 characters display. The first row of characters. In display should be Stored in 0x3000-0x304F, second row 0x3050-0x309F. Total memory block: 0x3000-0x37CF
 
 0x4000: Input area in memory. The first short tells you how many chars(N) are available in this area from the keyboard. Starting from 0x4002 there is an N amount of chars, without terminator null char.
+
+Calling Convention
+=============================
+When calling a function, the first parameter is passed to the function in RC. The second one will go to RD, and so on. If there are more than four parameters, they will be passed in the stack, and will be pushed in descending order. (eg. the function has seven parameters, which means the first four are in RC-RF, and then the last three are pushed in descending order: seventh, sixth, fifth.)

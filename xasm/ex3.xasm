@@ -1,7 +1,3 @@
-
-
-
-  // skf;aslkdfjal;s
 	lod RA, [100]
 	MOV RB, 2 // loop start, i=2
 	MOV RC, RA
