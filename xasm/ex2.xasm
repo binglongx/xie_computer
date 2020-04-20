@@ -9,5 +9,5 @@ loop:
 	INC RC
 	JMP [loop]
 done:
-	STO RA, [1000]
+	STS RA, [1000]
 	HLT
