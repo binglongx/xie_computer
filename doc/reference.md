@@ -10,10 +10,10 @@ RF: Register F
 PC: Program Counter: memory location to load next instruction
 SP: Stack Pointer:   top of stack
 SR: Status Register: 
-(z) Zero bit:     1 if CMP results in equal; 0 otherwise
-(n) Negative bit: 1 if CMP results in less;  0 otherwise
+(z) Zero bit:     Z=1 if CMP results in equal; Z=0 otherwise
+(n) Negative bit: N=1 if CMP results in less;  N=0 otherwise
            +-------------+-+-+
-Fields:    |             |n|z|
+Fields:    |             |N|Z|
            +-------------+-+-+
 Bit index: |             |1|0|
            +-------------+-+-+
@@ -21,78 +21,80 @@ Bit index: |             |1|0|
 
 Assembly Instructions
 =============================
+
 // move instructions
 ```c++
-MOV	reg, num // reg <- num			// MOV RB, 42
-MOV	reg1, reg2	// reg1 <- reg2			// MOV RA, RB
-LDS	reg, mem	// reg <- mem			// LDS RC, [0]
-LDS	reg, [reg]	// reg <- [reg]		      // LDS RC, [RD]
-STS	reg, mem	// reg -> mem			// STS RC, [0]
-STS	reg, [reg]	// reg -> [reg]			// STS RD, [RC]
-LDB	reg, mem	// reg_low8bits <- mem	// LDB RC, [0]  ;load byte and write 
-LDB	reg, [reg]	// reg_low8bits <- [reg]// LDB RC, [RD] ; into lower RC byte
-STB	reg, mem	// reg_low8bits -> mem	// STB RD, [0]  ;STSre lower byte 
-STB	reg, [reg]	// reg_low8bits -> [reg]// STB RD, [RC] ; to mem location 
+MOV     reg,  num       // reg  <- num              // MOV RB, 42
+MOV     reg1, reg2      // reg1 <- reg2             // MOV RA, RB
+LDB     reg,  [mem]     // reg_lowbyte <- mem       // LDB RC, [0]  ;load byte and write 
+LDB     reg,  [reg]     // reg_lowbyte <- [reg]     // LDB RC, [RD] ; into lower RC byte
+STB     reg,  [mem]     // reg_lowbyte -> mem       // STB RD, [0]  ;store RD lower byte 
+STB     reg,  [reg]     // reg_lowbyte -> [reg]     // STB RD, [RC] ; to mem location 
+LDS     reg,  [mem]     // reg  <- mem              // LDS RC, [0]
+LDS     reg,  [reg]     // reg  <- [reg]            // LDS RC, [RD]
+STS     reg,  [mem]     // reg  -> mem              // STS RC, [0]
+STS     reg,  [reg]     // reg  -> [reg]            // STS RD, [RC]
 ```
 
 // arithmetic instructions
 ```c++
-ADD	reg1, reg2	// reg1 <- reg1+ reg2		// ADD RA, RB
-ADD	reg, num	// reg <- reg + num		// ADD RA, 10
-SUB	reg1, reg2	// reg1 <- reg1 - reg2		// SUB RC, RD
-SUB	reg, num	// reg <- reg - num		// SUB RC, 7
-MUL	reg1, reg2	// reg1 <- reg1 * reg2		// MUL RB, RC
-MUL	reg, num	// reg <- reg * num		// MUL RB, 2
-DIV	reg1, reg2	// reg1 <- reg1 / reg2		// DIV RD, RA
-DIV	reg, num	// reg <- reg / num		// DIV RD, 3
-MOD	reg1, reg2 	// reg1 <- reg1 % reg2		// MOD RA, RB
-MOD	reg, num 	// reg <- reg % num		// MOD RA, 5
-INC	reg		// reg <- reg + 1			// INC RC
-DEC	reg		// reg <- reg - 1			// DEC RC
+ADD     reg1, reg2      // reg1 <- reg1 + reg2      // ADD RA, RB
+ADD     reg,  num       // reg  <- reg  + num       // ADD RA, 10
+SUB     reg1, reg2      // reg1 <- reg1 - reg2      // SUB RC, RD
+SUB     reg,  num       // reg  <- reg  - num       // SUB RC, 7
+MUL     reg1, reg2      // reg1 <- reg1 * reg2      // MUL RB, RC
+MUL     reg,  num       // reg  <- reg  * num       // MUL RB, 2
+DIV     reg1, reg2      // reg1 <- reg1 / reg2      // DIV RD, RA
+DIV     reg,  num       // reg  <- reg  / num       // DIV RD, 3
+MOD     reg1, reg2      // reg1 <- reg1 % reg2      // MOD RA, RB
+MOD     reg,  num       // reg  <- reg  % num       // MOD RA, 5
+INC     reg             // reg  <- reg  + 1         // INC RC
+DEC     reg             // reg  <- reg  - 1         // DEC RC
 ```
 
 // logical instructions
 ```c++
-AND	reg1, reg2	// reg1 <- reg1 & reg2		// AND RA, RB
-AND	reg, num	// reg <- reg & num		// AND RA, 0
-OR_	reg1, reg2	// reg1 <- reg1 | reg2		// OR_ RA, RB
-OR_	reg, num	// reg <- reg | num		// OR_ RA, 1
-XOR	reg1, reg2	// reg1 <- reg1 ^ reg2		// XOR RA, RA // RA==0
-XOR	reg, num	// reg <- reg ^ num		// XOR RA, 3
-NOT	reg		// reg  <- ~reg			// NOT RA
-SHL   reg, num	// reg  <- reg << num 		// SHL RA, 1
-SHL 	reg1, reg2  // reg1 <- reg1 << reg2 	// SHL RA, RB
-SHR   reg, num	// reg  <- reg >> num 		// SHR RA, 1
-SHR 	reg1, reg2  // reg1 <- reg1 >> reg2 	// SHR RA, RB
+AND     reg1, reg2      // reg1 <- reg1 & reg2      // AND RA, RB
+AND     reg,  num       // reg  <- reg  & num       // AND RA, 0
+OR_     reg1, reg2      // reg1 <- reg1 | reg2      // OR_ RA, RB
+OR_     reg,  num       // reg  <- reg  | num       // OR_ RA, 1
+XOR     reg1, reg2      // reg1 <- reg1 ^ reg2      // XOR RA, RA // RA==0
+XOR     reg,  num       // reg  <- reg  ^ num       // XOR RA, 3
+NOT     reg             // reg  <- ~reg             // NOT RA
+SHL     reg,  num       // reg  <- reg  << num      // SHL RA, 1
+SHL     reg1, reg2      // reg1 <- reg1 << reg2     // SHL RA, RB
+SHR     reg,  num       // reg  <- reg  >> num      // SHR RA, 1
+SHR     reg1, reg2      // reg1 <- reg1 >> reg2     // SHR RA, RB
 ```
 
 // program flow
 ```c++
-CMP	reg1, reg2	
-CMP 	reg, num
-// SR bits set: Zero bit true if reg1==reg2 (reg==num); 
-//              Negative bit true if reg1<reg2 (reg<num)
-JPE	mem		// jump to [mem] if SR Zero bit true
-JPE	reg		// jump to [reg] if SR Zero bit true
-JPL	mem		// jump to [mem] if SR Negative bit true
-JPL	reg		// jump to [reg] if SR Negative bit true
-JMP	mem		// jump to [mem]
-JMP	reg		// jump to [reg]
-CLL	mem		// PSH PC, JMP [mem]
-CLL	reg		// PSH PC, JMP [reg]
-RET			// POP PC
-HLT			// halt everything
+CMP     reg1, reg2      // SR: Z=1 if reg1 = reg2 (or num), Z=0 otherwise;
+CMP     reg1, num       //     N=1 if reg1 < reg2 (or num), N=0 otherwise
+JPE     [lab]           // jump to label if SR Z=1 (N=0)
+JPE     [reg]           // jump to [reg] if SR Z=1 (N=0)
+JPL     [lab]           // jump to label if SR N=1 (Z=0)
+JPL     [reg]           // jump to [reg] if SR N=1 (Z=0)
+JPG     [lab]           // jump to label if SR Z=0 && N=0
+JPG     [reg]           // jump to [reg] if SR Z=0 && N=0
+JMP     [lab]           // jump to label
+JMP     [reg]           // jump to [reg]
+CLL     [lab]           // PSH PC, JMP [lab]
+CLL     [reg]           // PSH PC, JMP [reg]
+RET                     // POP PC
+HLT                     // halt everything
 ```
 
 ```c++
-PSH	reg		// SP decreases by 2; Store reg into [SP].
-PSH 	num 		// SP decreases by 2; Store num into [SP].
-POP	reg		// load [SP] to reg; SP increases by 2.
+PSH     reg             // SP decreases by 2; store reg into [SP].
+PSH     num             // SP decreases by 2; store num into [SP].
+POP     reg             // load [SP] to reg; SP increases by 2.
 ```
 
-// keyboard
+// IO
 ```
-KBD         // get the input area, an xstring when user press enter if user press enter get xstring from input area
+KBD                     // wait for user enter a line. will get xstring at input area
+DSP                     // update screen with display area contents
 ```
 
 Machine Code Definition
@@ -105,37 +107,58 @@ Fields:    |  opcode  |f| operand1|    operand2     |
 Bit index: |    8     |1|    7    |       16        |
            +----------+-+---------+-----------------+
 ```
-f = flag of operand2 type, 0==reg; 1==num
+f = flag of operand2 type, 0==reg; 1==num/mem/label
+
+Instruction with 0 operands:
+```
+RET                     // operand1 and operand2 are encoded as 0s.
+```
+
+Instruction with 1 operand:
+```
+INC     operand2        // the single operand is encoded in operand2 field; operand1 encoded as 0
+```
+
+Instruction with 2 operands:
+```
+MOV     operand1, operand2
+```
 
 // opcode table 8-bit (hex)
 ```c++
 MOV 01
-LDS 02
-STS 03
-ADD 04
-SUB 05
-MUL 06
-DIV 07
-MOD 08
-INC 09
-DEC 0A
-AND 0B
-OR_ 0C
-XOR 0D
-CMP 0E
-JPE 0F
-JPL 10
-JMP 11
-CLL 12
-RET 13
-HLT 14
-PSH 15
-POP 16
-NOT 17
-LDB 18
-STB 19
-SHL 1A
-SHR 1B
+LDB 02
+STB 03
+LDS 04
+STS 05
+
+ADD 10
+SUB 11
+MUL 12
+DIV 13
+MOD 14
+INC 15
+DEC 16
+
+AND 20
+OR_ 21
+XOR 22
+NOT 23
+SHL 24
+SHR 25
+
+CMP 30
+JPE 31
+JPL 32
+JPG 33
+JMP 34
+CLL 35
+RET 36
+HLT 37
+
+PSH 40
+POP 41
+
 ```
 // register table 8-bit (hex)
 ```c++

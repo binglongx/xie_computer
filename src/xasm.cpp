@@ -1,271 +1,387 @@
-//
-//  main.cpp
-//  xasm
-//
-//  Created by Colin Xie on 4/11/20.
-//  Copyright © 2020 Colin Xie. All rights reserved.
-//
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <map>
-using namespace std;
+
+#include "parser.h"
+
 
 int MACHINE_CODE_START = 0x1000; // first machine instruction starts here.
 
-map<string, int> reg_map = {{"RA", 0x0}, {"RB", 0x1}, {"RC", 0x2}, {"RD", 0x3}, {"RE", 0x4}, {"RF", 0x5}, {"SP", 0x10}, {"PC", 0x11}, {"SR", 0x12}};
-map<string, int> instr_map = {{"MOV", 0x1}, {"LDS", 0x2}, {"STS", 0x3}, {"ADD", 0x4}, {"SUB", 0x5}, {"MUL", 0x6}, {"DIV", 0x7}, {"MOD", 0x8}, {"INC", 0x9}, {"DEC", 0xA},
-{"AND", 0xB}, {"OR_", 0xC}, {"XOR", 0xD}, {"CMP", 0xE}, {"JPE", 0xF}, {"JPL", 0x10}, {"JMP", 0x11}, {"CLL", 0x12}, {"RET", 0x13}, {"HLT", 0x14}, {"PSH", 0x15}, {"POP", 0x16},
-    {"NOT", 0x17}, {"LDB", 0x18}, {"STB", 0x19}, {"SHL", 0x1A}, {"SHR", 0x1B}};
-map<string, int> mem_map;
-vector<string> regs = {"RA", "RB", "RC", "RD", "RE", "RF", "PC", "SP", "SR"};
-
-int assemble_machine_code(int opcode, int flag, int operand1, int operand2){
-    int bin;
-    bin = opcode << 24;
-    bin += flag << 23;
-    bin += operand1 << 16;
-    bin += operand2;
-    return bin;
-}
-
-vector<string> tokenize(string str){
-    vector<string> tokens;
-    istringstream stream{str};
-    string token;
-    while (stream >> token)
-        tokens.push_back(token);
-    return tokens;
-}
-
-void upper(string& str){
-    for (char& letter : str)
-        letter = toupper(letter);
-}
-
-// str could be "1288", "0x3000", "0X3000", "0b00110011", "0B00110011", "'a'".
-int string_to_number(string str)
+bool parse_naked_reg_or_num(const std::string& str, int& flag, int& operand)
 {
-    int val = 0;
-    if( str.size()>2 )
+    auto reg = upper(str);
+    auto& register_map = getRegisterMap();
+    auto reg_it = register_map.find(reg);
+    if( reg_it != register_map.end() )
     {
-        string prefix = str.substr(0, 2);
-        upper(prefix);
-        if( prefix=="0X" )
-        {
-            string proper = str.substr(2);
-            std::istringstream ss(proper);
-            ss >> std::hex >> val;
-            return val;
-        }
-        else if( prefix=="0B" )
-        {
-            string proper = str.substr(2);
-            int term = 1;
-            for (int i=0; i<proper.length(); i++)
-            {
-                int ind = (int)(proper.size()-1-i);
-                char bit = proper[ind];
-                if( bit=='1' )
-                    val += term;
-                else if( bit != '0' )
-                {
-                    // there is something wrong
-                }
-                term *= 2;
-            }
-            return val;
-        }
-        else if(( str.front() == '\'' && str.back() == '\'') || ( str.front() == '"' && str.back() == '"'))
-        {
-            std::string proper = str.substr(1, str.size()-2);
-            for(int i=0; i<proper.size(); ++i)
-            {
-                int ind = int(proper.size()-1-i);
-                unsigned int ch = (unsigned char)(proper[ind]);
-                val |= (ch << (8*ind));
-            }
-            return val;
-        }
+        if( reg=="PC" || reg=="SR" )
+            return false;   // do not allow literal use of these two registers.
+        flag = 0;
+        operand = static_cast<int>(reg_it->second);
     }
-    val = stoi(str);
-    return val;
+    else
+    {
+        if(str.empty())
+            return false;
+        
+        // must be num
+        // TODO: check if operand is realy a number literal.
+        flag = 1;
+        operand = string_to_number(str);
+    }
+    return true;
 }
 
-// if the tokens have comments, they will be removed.
-void remove_comments(vector<string>& tokens)
+bool assemble(SourceFile& source, const std::string& binFilePath)
 {
-    for(auto it = tokens.begin(); it != tokens.end(); ++it)
-    {
-        auto& token = *it;
-        size_t loc = token.find("//");
-        if( string::npos != loc )
+    bool ok;
+    auto& instruction_map = getInstructionMap();
+    auto& register_map = getRegisterMap();
+
+    // first pass: handle labels
+    // the line tokens will have label removed.
+    std::cout << "Processing labels and comments..." << std::endl;
+    std::map<std::string, int> label_map;       // the label instruction_number map
+    int global_instruction_line_number = 0;
+    ok = for_each_line(source, [&](std::string& filePath, CodeLine& line){
+        std::vector<std::string> tokens = tokenize(line.regularized);
+        std::string label;
+        if( !detect_and_remove_label_for_line(tokens, label) )
         {
-            if(loc == 0)
+            std::cout << "Syntax error: invalid label: " << filePath << ", Line: " << line.number << std::endl
+                <<"    " << line.original << std::endl;
+            return false;
+        }
+        if( !label.empty() )
+        {
+            auto it = label_map.find(label);
+            if( it==label_map.end() )
             {
-                // that whole token is thrown away
-                tokens.erase(it, tokens.end());
+                //label_map[label] = global_instruction_line_number;
+                label_map[label] = MACHINE_CODE_START + global_instruction_line_number * 4;
             }
             else
             {
-                // some part of this toke is still good.
-                token.resize(loc);
-                tokens.erase(it+1, tokens.end());
+                std::cout << "Syntax error: duplicate label: `" << label << "` : " << filePath << ", Line: " << line.number << std::endl
+                    <<"    " << line.original << std::endl;
+                return false;
             }
-            return;
         }
-    }
-}
-
-// input tokens must have stripped comments
-// return non-empty label string excluding ':' if this is a label line
-string detect_label_line(vector<string> tokens)
-{
-    if (tokens.size() == 1)
-    {
-        if( tokens.front().back()==':' )
+        
+        if( !tokens.empty() )
         {
-            string label = tokens.front();
-            label.pop_back();
-            return label;
+            if( instruction_map.find(upper(tokens.front())) != instruction_map.end() )
+            {
+                // valid instruction
+                ++ global_instruction_line_number;
+            }
+            else
+            {
+                // currently we only allow non-empty label-removed line to be instruction line
+                std::cout << "Syntax error: unrecognized instruction: `" << tokens.front() << "` : " << filePath << ", Line: " << line.number << std::endl
+                    <<"    " << line.original << std::endl;
+                return false;
+            }
         }
-    }
-    else if( tokens.size() == 2 )
+        line.tokens = tokens;
+        return true;
+    });
+    if( !ok )
+        return false;
+    
+    std::cout << "Labels processed: " << label_map.size() << std::endl;
+    if( !label_map.empty() )
     {
-        if (tokens[1] == ":")
-            return tokens.front();
+        std::cout << "---------------------------------------------" << std::endl;
+        for (auto& entry : label_map)
+            std::cout << integer_as_hex(entry.second) << " = " << entry.first << ":" << std::endl;
+        std::cout << "---------------------------------------------" << std::endl;
     }
-    return {};
-}
 
-// usage: xasm [input_xasm_filepath] [output_obj_filepath]
-int main(int argc, const char** argv){
-    if (argc != 3){
-        cout << "Too many or too little arguments";
-        return 1;
-    }
-    int lines=0;
-    vector<int> instructions;
-    string source = argv[1];
-    ifstream s1(source);
-    if (!s1.is_open()) {
-        cout << "failed to open " << source << '\n';
-    } else {
+    // second pass: handle instructios in line tokens.
+    std::cout << "Assembling instructions..." << std::endl;
+    std::vector<int> instructions;
+    instructions.reserve(global_instruction_line_number+1);
+    ok = for_each_line(source, [&](std::string& filePath, CodeLine& line){
+        std::vector<std::string>& ops = line.tokens;
+        if( ops.empty() )
+            return true; // skip to next line
 
-        // first pass: handle labels (comments always handled)
-        int skipped_line_count = 0;
-        while (true){
-            string line;
-            if (!getline(s1, line))
-                break;
-            upper(line);
-            vector<string> tokens = tokenize(line);
-            remove_comments(tokens);
-
-            // remove empty line or its equivalent, i.e., whole line comments for calculating label location.
-            if( tokens.empty() )
-            {
-                skipped_line_count ++;
-            }
-            else if( string label = detect_label_line(tokens); !label.empty() )
-            {
-                skipped_line_count ++;
-                mem_map[label] = MACHINE_CODE_START + (lines+1-skipped_line_count) * 4;
-            }
-            lines++;
+        auto instr = upper(ops[0]);
+        auto instr_it = instruction_map.find(instr);
+        if( instr_it == instruction_map.end() )
+        {
+            assert(false);  // no such instruction; but this should be caught at first pass.
+            return false;
         }
-
-        cout << "Found labels:\n";
-        cout << "-------------------------------\n";
-        for (auto& entry : mem_map)
-            cout << hex << entry.second << " = " << entry.first << ":" << endl;
-        cout << "-------------------------------\n";
-
-        s1.clear();
-        s1.seekg(0);
-        while (true){
-            // second pass: handle instructios
-            string line;
-            vector<string> ops;
-            string substring="";
-            if( !getline(s1, line) )
-                break;
-            cout << "Read: " << line << endl;
-            upper(line);
-            ops = tokenize(line);
-            remove_comments(ops);
-            if (ops.size() == 0)
-                continue; // skip to next line
-
-            if( !detect_label_line(ops).empty() )
-                continue; // label line.
-
-            // erase commas between operands
-            for (int i=0; i<ops.size(); i++){
-                if (ops[i].back() == ',')
-                    ops[i].pop_back();
-            }
-
-            auto instruction_name = ops[0];
-            auto instr_it = instr_map.find(instruction_name);
-            if( instr_it == instr_map.end() )
+        
+        int opcode = static_cast<int>(instr_it->second.opcode);
+        int flag = 0;
+        int operand1 = 0;
+        int operand2 = 0;
+        if( instr_it->second.operandCount == 0 )
+        {
+            // zero operand instruction
+            if( ops.size()!=1 )
             {
-                cout << "Error: unrecognzed instruction: " << instruction_name << std::endl;
-                return -1;
+                std::cout << "Syntax error: instruction cannot have operands: "<< filePath << ", Line: " << line.number << std::endl
+                    <<"    " << line.original << std::endl;
+                return false;
             }
-
-            int flag = 0;
-            int opcode= instr_it->second;
-            int opers[2] = {0, 0};
-
-            //int operands;
-            for (int i=1; i<ops.size(); i++){
-                bool isreg = false;
-                for (int j=0; j<regs.size(); j++){
-                    if (ops[i] == regs[j])
-                        isreg = true;
-                    else if (ops[i].substr(1, ops[i].length()-2) == regs[j]){
-                        ops[i].pop_back();
-                        ops[i].erase(ops[i].begin());
-                        isreg = true;
+        }
+        else if( instr_it->second.operandCount == 1 )
+        {
+            // single operand instruction
+            if( ops.size()!=2 )
+            {
+                std::cout << "Syntax error: only one operand allowed for instruction: "<< filePath << ", Line: " << line.number << std::endl
+                    <<"    " << line.original << std::endl;
+                return false;
+            }
+            if( instr=="INC" || instr=="DEC" || instr=="NOT" || instr=="POP" )
+            {
+                // naked reg operand only
+                auto reg = upper(ops[1]);
+                auto reg_it = register_map.find(reg);
+                if( reg_it == register_map.end() )
+                {
+                    std::cout << "Syntax error: invalid register: " << ops[1] << " : " << filePath << ", Line: " << line.number << std::endl
+                        <<"    " << line.original << std::endl;
+                    return false;
+                }
+                operand2 = static_cast<int>(reg_it->second);
+            }
+            else if( instr=="JPE" || instr=="JPL" || instr=="JPG" || instr=="JMP"|| instr=="CLL" )
+            {
+                // label, [label], or [reg].
+                auto operand = ops[1];
+                bool is_reg = false;
+                if( operand.size()>=2 && operand.front()=='[' && operand.back()==']' )
+                {
+                    operand.pop_back();
+                    operand.erase(0, 1);
+                    auto reg = upper(operand);
+                    auto reg_it = register_map.find(reg);
+                    if( reg_it != register_map.end() )
+                    {
+                        is_reg = true;
+                        operand2 = static_cast<int>(reg_it->second);
                     }
                 }
-                if (isreg && ops[0] != "INC" && ops[0] != "DEC" && ops[0] != "NOT" && ops[0] != "PSH" && ops[0] != "POP")
-                    opers[i-1] = reg_map[ops[i]];
-                else if (isreg)
-                    opers[1] = reg_map[ops[i]];
-                else if (ops[i].front() == '[' && ops[i].back() == ']'){
-                    flag = 1;
-                    ops[i].pop_back();
-                    ops[i].erase(ops[i].begin());
-                    if (mem_map.find(ops[i]) != mem_map.end())
-                        opers[1] = mem_map[ops[i]];
-                    else {
-                        cout << ops[i] << endl;
-                        opers[1] = string_to_number(ops[i]);
+                if( !is_reg )
+                {
+                    // must be label.
+                    auto label_it = label_map.find(operand);
+                    if( label_it == label_map.end() )
+                    {
+                        std::cout << "Syntax error: unrecognized label: " << operand << " : " << filePath << ", Line: " << line.number << std::endl
+                            <<"    " << line.original << std::endl;
+                        return false;
                     }
-                }else if (ops[0] == "MOV" || ops[0] == "ADD" || ops[0] == "SUB" || ops[0] == "MUL" || ops[0] == "DIV" || ops[0] == "MOD" || ops[0] == "AND" || ops[0] == "OR_" || ops[0] == "XOR" || ops[0] == "CMP" || ops[0] == "JPE" || ops[0] == "JPL" || ops[0] == "JMP" || ops[0] == "CLL"){
-                    flag = 1;
-                    
-                    opers[1] = string_to_number(ops[i]);
+                    else
+                    {
+                        flag = 1;
+                        operand2 = label_it->second;
+                    }
                 }
             }
-            cout << opcode << " " << opers[0] << " " << opers[1] << "\n";
-            instructions.push_back(assemble_machine_code(opcode, flag, opers[0], opers[1]));
-            cout << hex << instructions.back() << endl;
+            else if( instr=="PSH" )
+            {
+                // naked reg or num
+                if( ! parse_naked_reg_or_num(ops[1], flag, operand2) )
+                {
+                    std::cout << "Syntax error: operand must be register or number: " << filePath << ", Line: " << line.number << std::endl
+                        <<"    " << line.original << std::endl;
+                    return false;
+                }
+            }
         }
+        else if( instr_it->second.operandCount == 2 )
+        {
+            // double operand instruction
+            //  remove optional comma
+            if( ops.size()>=3 && ops[2]=="," )
+                ops.erase(ops.begin()+2);
+            if( ops.size()>=3 )
+            {
+                if( ops[1].back()==',' )
+                {
+                    ops[1].pop_back();
+                    if( ops[1].empty() )
+                    {
+                        std::cout << "Syntax error: instruction needs 2 operands: "<< filePath << ", Line: " << line.number << std::endl
+                            <<"    " << line.original << std::endl;
+                        return false;
+                    }
+                }
+                if( ops[2].front()==',' )
+                {
+                    ops[2].erase(0, 1);
+                    if( ops[2].empty() )
+                        ops.pop_back();
+                }
+            }
+            
+            if( ops.size() != 3 )
+            {
+                std::cout << "Syntax error: instruction needs 2 operands: "<< filePath << ", Line: " << line.number << std::endl
+                    <<"    " << line.original << std::endl;
+                return false;
+            }
+
+            // parse reg1
+            auto reg1 = upper(ops[1]);
+            auto reg1_it = register_map.find(reg1);
+            if( reg1_it == register_map.end() )
+            {
+                std::cout << "Syntax error: invalid register: " << ops[1] << " : " << filePath << ", Line: " << line.number << std::endl
+                    <<"    " << line.original << std::endl;
+                return false;
+            }
+            operand1 = static_cast<int>(reg1_it->second);
+
+            // parse operand2
+            if( instr=="LDB" || instr=="STB" || instr=="LDS" || instr=="STS" )
+            {
+                // operand2: [reg] or [mem]
+                auto operand = ops[2];
+                if( operand.size()>=2 && operand.front()=='[' && operand.back()==']' )
+                {
+                    operand.pop_back();
+                    operand.erase(0, 1);
+                    auto reg = upper(operand);
+                    auto reg_it = register_map.find(reg);
+                    if( reg_it != register_map.end() )
+                    {
+                        operand2 = static_cast<int>(reg_it->second);
+                    }
+                    else
+                    {
+                        // must be [mem]
+                        // TODO: check if operand is realy a number literal.
+                        flag = 1;
+                        operand2 = string_to_number(operand);
+                    }
+                }
+                else
+                {
+                    std::cout << "Syntax error: invalid operand2, needing `[` and `]`: " << ops[2] << " : " << filePath << ", Line: " << line.number << std::endl
+                        <<"    " << line.original << std::endl;
+                    return false;
+                }
+            }
+            else // if( instr=="" ) // all other 2-operand instruction use operand2 as reg/num.
+            {
+                // operand2: naked reg or num.
+                if( ! parse_naked_reg_or_num(ops[2], flag, operand2) )
+                {
+                    std::cout << "Syntax error: operand must be register or number: " << filePath << ", Line: " << line.number << std::endl
+                        <<"    " << line.original << std::endl;
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            assert(false);  // should not have instructions with other operand count
+        }
+
+        auto code = assemble_machine_code(opcode, flag, operand1, operand2);
+        std::cout << integer_as_hex(code) << "  :  ";
+        std::cout << "opc=0x"<< integer_as_hex((uint8_t)(opcode)) << "  f=" << flag << "  op1=" << operand1 << "  op2=" << operand2;
+        auto disasmbled = disasemble_machine_code(code, label_map);
+        if( !disasmbled.empty() )
+            std::cout << "\tDISASM: " << disasmbled << std::endl;
+        else
+            std::cout << "\tDISASM: " << "!! Invalid machine code" << std::endl;
+        instructions.push_back(code);
+        return true;
+    });
+    if( !ok )
+        return false;
+    std::cout << "Instructions assembled: " << instructions.size() << ",  size = "<< instructions.size()*sizeof(int) <<" bytes" << std::endl;
+
+    std::ofstream s(binFilePath, std::ios::binary);
+    if (!s.is_open())
+    {
+        std::cout << "Failed to open for write: " << binFilePath << std::endl;
+        return false;
     }
-    string xasm = argv[2];
-    ofstream s(xasm, ios::binary);
-    if (!s.is_open()) {
-        cout << "failed to open " << xasm << '\n';
-    } else {
-        for (int i=0; i<instructions.size(); i++){
+    else
+    {
+        for (int i=0; i<instructions.size(); i++)
+        {
             int bin = instructions[i];
             s.write(reinterpret_cast<const char*>(&bin), sizeof(bin));
         }
         s.close();
+        std::cout << "Binary file written: " << binFilePath << std::endl;
     }
+    return true;
+}
+
+
+// usage: xasm [input_xasm_filepath] [output_obj_filepath]
+int main(int argc, const char** argv){
+    if (argc != 3 && argc != 4 ){
+        std::cout << "Usage: " << argv[0] << " <input.xasm> <output.bin> [extra_include_dirs]" << std::endl;
+        std::cout << "   extra_include_dirs: use ; to separate multiple directories, e.g: dir_1;dir_2" << std::endl;
+        std::cout << "   extra_include_dirs is optional." << std::endl;
+        return 1;
+    }
+
+    std::string sourceFilePath = argv[1];
+    std::string binFilePath = argv[2];
+
+    std::vector<std::string> extra_include_dirs;
+    if( argc==4 )
+    {
+        std::string combined_extra_include_dirs = argv[3];
+        size_t pos = 0;
+        for(;;)
+        {
+            auto loc = combined_extra_include_dirs.find(';', pos);
+            if( loc != std::string::npos )
+            {
+                if( loc>pos )
+                    extra_include_dirs.push_back( combined_extra_include_dirs.substr(pos, loc-pos) );
+                pos = loc + 1;
+            }
+            else
+                break;
+        }
+        if( pos<combined_extra_include_dirs.size() )
+            extra_include_dirs.push_back( combined_extra_include_dirs.substr(pos) );
+    }
+    if( !extra_include_dirs.empty() )
+    {
+        std::cout << "Extra include directories: " << extra_include_dirs.size() << std::endl;
+        for(auto& include_dir : extra_include_dirs)
+            std::cout << "  " << include_dir << std::endl;
+    }
+    else
+        std::cout << "Extra include directories: None" << std::endl;
+    
+    //auto abs_path = std::filesystem::absolute(p);
+    
+    auto currentDir = std::filesystem::current_path();
+    std::cout << "Current directory: " << currentDir << std::endl;
+    
+    Loader loader;
+    loader.currentDir = currentDir;
+    for(auto& dir : extra_include_dirs)
+        loader.extraIncludeDirs.push_back(dir);
+    
+    SourceFile file;
+    if( ! loader.load(sourceFilePath, file) )
+        return 2;
+    
+    std::cout << "Source code file loaded: " << sourceFilePath << std::endl;
+    if( !assemble(file, binFilePath))
+        return 3;
+
     return 0;
 }

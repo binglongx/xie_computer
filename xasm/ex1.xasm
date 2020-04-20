@@ -1,5 +1,8 @@
-LOD RA, [0]
-LOD RB, [2]
-ADD RA, RB
-STO RA, [4]
+#include "ex2.xasm"
+Start:
+LDS RA, [0]
+LDS RB, [2]
+ADD RA , RB
+STS RA, [4]
+JMP Start
 HLT
