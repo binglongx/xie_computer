@@ -1,0 +1,7 @@
+    MOV RC, 'a'
+    CLL [upper]
+    STB RC, [0x3000]
+    DSP
+    HLT
+
+#include "upper.xasm"

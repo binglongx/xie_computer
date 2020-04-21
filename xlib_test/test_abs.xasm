@@ -1,0 +1,7 @@
+    MOV RC, -3
+    CLL [abs]
+    MOV RC, 5
+    CLL [abs]
+    HLT
+
+#include "abs.xasm"

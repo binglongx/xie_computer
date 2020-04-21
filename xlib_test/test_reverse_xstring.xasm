@@ -1,0 +1,20 @@
+    MOV RF, 4
+    STS RF, [0x2ffe]
+    MOV RA, '0'
+    MOV RB, 0x3000
+    STB RA, [RB]
+    INC RA
+    INC RB
+    STB RA, [RB]
+    INC RA
+    INC RB
+    STB RA, [RB]
+    INC RA
+    INC RB
+    STB RA, [RB]
+    MOV RC, 0x2ffe
+    CLL [reverse_xstring]
+    DSP
+    HLT
+
+#include "reverse_xstring.xasm"

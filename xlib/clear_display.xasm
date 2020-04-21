@@ -1,0 +1,17 @@
+// clear display area (0x3000 - 0x37CF)
+// Example usage:
+//   CLL [clear_display]
+clear_display:
+    PSH RC
+    PSH RD
+    PSH RE
+    MOV RC, 32
+    MOV RD, 0x3000
+    MOV RE, 0x37CF
+    CLL [fill_char]
+    POP RE
+    POP RD
+    POP RC
+    RET
+
+#include "fill_char.xasm"

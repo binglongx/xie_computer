@@ -1,0 +1,17 @@
+// if character is lowercase then make upper
+// Input parameters:
+//   RC: character to upper
+// Example usage:
+//   MOV RC, 'a'
+//   CLL [upper]
+upper:
+    CMP RC, '{'
+    JPL [less_upper]
+    JMP [ret_upper]
+ret_upper:
+    RET
+less_upper:
+    CMP RC, 'a'
+    JPL [ret_upper]
+    SUB RC, 32
+    RET

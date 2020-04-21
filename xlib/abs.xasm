@@ -1,0 +1,18 @@
+//change RC to parameter before function call, result will be in RA
+// Input parameters:
+//   RC: input number
+// Return value:
+//   RA: the absolute value
+// Example usage:
+//   MOV RC, -3
+//   CLL [abs]
+abs:
+	MOV RA, 0
+	CMP RC, RA
+	JPL [abs__negative]
+	MOV RA, RC
+	JMP [abs__func_end]
+abs__negative:
+	SUB RA, RC
+abs__func_end:
+	RET

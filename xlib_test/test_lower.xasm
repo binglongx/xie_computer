@@ -1,0 +1,7 @@
+    MOV RC, 'A'
+    CLL [lower]
+    STB RC, [0x3000]
+    DSP
+    HLT
+
+#include "lower.xasm"

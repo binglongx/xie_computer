@@ -1,0 +1,23 @@
+// fill memory area with a character
+// Input parameters:
+//   RC: character to fill with
+//   RD: first location to be filled
+//   RE: how many chars to fill
+// Example usage:
+//   MOV RC, 'A'
+//   MOV RD, 0x3000
+//   MOV RE, 2000
+//   CLL [fill_char]
+fill_char:
+    PSH RA
+    MOV RA, 0
+fill_char__loop:
+    STB RC, [RD]
+    CMP RA, RE
+    JPE [fill_char__end]
+    INC RA
+    INC RD
+    JMP [fill_char__loop]
+fill_char__end:
+    POP RA
+    RET

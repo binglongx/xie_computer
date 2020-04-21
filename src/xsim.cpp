@@ -87,7 +87,6 @@ bool run_instruction(Instruction instruction, RegisterFile& regs, RAM& ram)
     int flag = (instruction >> 23) & 0x0001;
     int operand1 = (instruction >> 16) & 0x7F;
     int operand2 = instruction & 0xffff;
-
     Opcode opc = (Opcode)opcode;
     short num = operand2;
     short* reg1 = regs.getRegister(operand1);
@@ -168,7 +167,7 @@ bool run_instruction(Instruction instruction, RegisterFile& regs, RAM& ram)
             break;
         
         case Opcode::JPE:
-            if ((regs.SR & 0x03) != 0x01)
+            if ((regs.SR & 0x03) == 0x01)
                 regs.PC = num;
             else
                 regs.PC += 4;
@@ -217,8 +216,23 @@ bool run_instruction(Instruction instruction, RegisterFile& regs, RAM& ram)
             break;
             
         case Opcode::KBD:
+        {
+            string kbd_input;
+            cin >> kbd_input;
+            *ram.access_short(0x4000) = kbd_input.length();
+            for (int c_ind = 0; c_ind<kbd_input.length(); c_ind++)
+                *ram.access_byte(0x4002 + c_ind) = kbd_input.at(c_ind);
             break;
+        }
         case Opcode::DSP:
+            for(int i=0; i<25; ++i)
+            {
+                for(int j=0; j<80; ++j)
+                {
+                    cout << *ram.access_byte(0x3000 + i*80 + j);
+                }
+                cout << endl;
+            }
             break;
     }
     regs.PC += 4;
@@ -268,18 +282,20 @@ int main(int argc, const char** argv)
     }
     /*
     *ram.access_byte(0x3000) = '0';
-    *ram.access_byte(0x3001) = 'a';
-    *ram.access_byte(0x3002) = 'b';
-    *ram.access_byte(0x3003) = 'c';
-    *ram.access_byte(0x3004) = 'd';
-    *ram.access_byte(0x3005) = 'e';
+    *ram.access_byte(0x3001) = '1';
+    *ram.access_byte(0x3002) = '2';
+    *ram.access_byte(0x3003) = '3';
+    *ram.access_byte(0x3004) = '4';
+    *ram.access_byte(0x3005) = '5';
     */
-    *ram.access_short(0x4000) = 1;
+    /*
+    *ram.access_short(0x4000) = 5;
     *ram.access_byte(0x4002) = '0';
     *ram.access_byte(0x4003) = '9';
     *ram.access_byte(0x4004) = '9';
     *ram.access_byte(0x4005) = '9';
     *ram.access_byte(0x4006) = '9';
+    */
     // boot our XIE computer
     regs.PC = MACHINE_CODE_START;
     regs.SP = 0x2000;
@@ -297,22 +313,5 @@ int main(int argc, const char** argv)
     for(int i=0; i<5; ++i)
         cout << dec << *ram.access_short(i*2) << " ";
     cout << endl;
-
-    // show display
-    cout << endl;
-    cout << "This is our display: ------------------>>>";
-    cout << endl;
-    for(int i=0; i<25; ++i)
-    {
-        for(int j=0; j<80; ++j)
-        {
-            cout << *ram.access_byte(0x3000 + i*80 + j);
-        }
-        cout << endl;
-    }
-    cout << "<<<---------------------------------------";
-    cout << endl;
-
-
     return 0;
 }

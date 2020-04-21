@@ -1,0 +1,12 @@
+// reverse the xstring in place in [RC].
+//  RC: short: location of char count
+reverse_xstring:
+    PSH RD
+    MOV RD, RC
+    ADD RD, 2
+    LDS RC, [RC]
+    CLL [reverse_string]
+    POP RD
+    RET
+
+#include "reverse_string.xasm"

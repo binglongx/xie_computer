@@ -1,7 +1,0 @@
-//#include "ex2.xasm"
-Start: LDS RA, [0]
-LDS RB, [2]
-ADD RA , RB
-STS RA, [4]
-//JMP Start
-HLT

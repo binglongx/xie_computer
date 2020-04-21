@@ -1,0 +1,18 @@
+
+    MOV RA, '>'
+    MOV RB, 0x3000
+    MOV RC, 0x2FFF
+    MOV RD, 0
+    MOV RE, 32
+loop:
+    STB RA, [RB]
+    STB RE, [RC]
+    DSP
+    INC RD
+    INC RB
+    INC RC
+    CMP RD, 79
+    JPE [end]
+    JMP [loop]
+end:
+    HLT

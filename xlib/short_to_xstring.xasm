@@ -1,0 +1,37 @@
+// convert a short to an xstring
+// Input parameters:
+//   RC: short to be converted
+//   RD: location of xstring in memory (digit count will be stored here)
+// Example usage:
+//   MOV RC, 49
+//   MOV RD, 0x3000
+//   CLL [short_to_xstring]
+short_to_xstring:
+    PSH RA
+    PSH RB
+	MOV RA, 1 // digit count
+    ADD RD, 2 // digit location
+loop_stxstring:
+    MOV RB, RC
+    MOD RB, 10
+    ADD RB, '0'
+    STB RB, [RD]
+    CMP RC, 10
+    JPL [end_stxstring]
+    DIV RC, 10
+    INC RA // digits += 1
+    INC RD // digit loc += 1
+    JMP [loop_stxstring]
+end_stxstring:
+    SUB RD, RA
+    SUB RD, 1
+    STS RA, [RD]
+    PSH RC
+    MOV RC, RD
+    CLL [reverse_xstring]
+    POP RC
+    POP RB
+    POP RA
+    RET
+
+#include "reverse_xstring.xasm"

@@ -1,0 +1,25 @@
+// convert a string to a short
+// Input parameters:
+//   RC: location of first char
+//   RD: location of last char
+// Return value:
+//   RA: the short
+// Example usage:
+//   MOV RC, 0x4000
+//   MOV RD, 0x4004
+//   CLL [string_to_short]
+string_to_short:
+    PSH RB
+    MOV RA, 0
+loop_stringts:
+    MUL RA, 10
+    LDB RB, [RC]
+    SUB RB, '0'
+    ADD RA, RB
+    CMP RC, RD
+    JPE [end_stringts]
+    INC RC
+    JMP [loop_stringts]
+end_stringts:
+    POP RB
+    RET
