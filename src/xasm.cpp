@@ -35,7 +35,7 @@ bool parse_naked_reg_or_num(const std::string& str, int& flag, int& operand)
     return true;
 }
 
-bool assemble(SourceFile& source, const std::string& binFilePath)
+bool assemble(SourceFile& source, std::vector<int>& instructions)
 {
     bool ok;
     auto& instruction_map = getInstructionMap();
@@ -103,7 +103,7 @@ bool assemble(SourceFile& source, const std::string& binFilePath)
 
     // second pass: handle instructios in line tokens.
     std::cout << "Assembling instructions..." << std::endl;
-    std::vector<int> instructions;
+    instructions.clear();
     instructions.reserve(global_instruction_line_number+1);
     ok = for_each_line(source, [&](std::string& filePath, CodeLine& line){
         std::vector<std::string>& ops = line.tokens;
@@ -304,6 +304,16 @@ bool assemble(SourceFile& source, const std::string& binFilePath)
         return false;
     std::cout << "Instructions assembled: " << instructions.size() << ",  size = "<< instructions.size()*sizeof(int) <<" bytes" << std::endl;
 
+
+    return true;
+}
+
+bool assemble(SourceFile& source, const std::string& binFilePath)
+{
+    std::vector<int> instructions;
+    if( !assemble(source, instructions) )
+        return false;
+    
     std::ofstream s(binFilePath, std::ios::binary);
     if (!s.is_open())
     {
@@ -322,7 +332,6 @@ bool assemble(SourceFile& source, const std::string& binFilePath)
     }
     return true;
 }
-
 
 // usage: xasm [input_xasm_filepath] [output_obj_filepath]
 int main(int argc, const char** argv){

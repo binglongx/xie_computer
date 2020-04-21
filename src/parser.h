@@ -15,8 +15,8 @@ struct CodeLine
     int                         number;         // line number in the file
     std::string                 original;       // verbatim text of line.
     std::string                 regularized;    // comment removed text of line. if this is #include, the file content is in `inclusion` below;
-    std::vector<std::string>    tokens;         // comment-removed, label-removed, tokens.
     std::unique_ptr<SourceFile> inclusion;      //   otherwise `inclusion` is empty
+    std::vector<std::string>    tokens;         //== comment-removed, label-removed, tokens. [empty after loading; used in assembling only]
 };
 
 struct SourceFile
@@ -61,19 +61,28 @@ std::string                 upper(const std::string& str);
 int                         string_to_number(const std::string& str);
 std::vector<std::string>    tokenize(const std::string& str);
 bool                        remove_inline_comments(std::string& line);
+bool                        detect_and_remove_label_for_line(std::vector<std::string>& tokens, std::string& label);
 
 struct Loader
 {
     std::filesystem::path               currentDir;
     std::vector<std::filesystem::path>  extraIncludeDirs;
     
+    // load the source code lines from file path and also handle #include recursively.
     bool    load(const std::string& filePath, SourceFile& file);
 
+    // load the source code lines from a string of source code. It should not have #includes.
+    bool    loadFromString(const std::string& sourceCodeContents, SourceFile& file);
+    
 private:
     bool    recurse_load(const std::string& includePath, SourceFile& file, int level);
+    
+    template<class FO>
+    bool load_istream(const std::string& filePath, std::istream& is, SourceFile& file, int level, FO inclusionHandler);
+
+    std::map<std::string, bool>    mapIncludedFiles;    // absolute path
 };
 
-bool    detect_and_remove_label_for_line(std::vector<std::string>& tokens, std::string& label);
 
 //==============================================================================================================================
 //==============================================================================================================================
@@ -145,7 +154,7 @@ inline std::string upper(const std::string& str)
     return s;
 }
 
-// from the line, remove `//` and beyond; or replace well-formed `/*` and `*/` pairs of ' ', then return true.
+// from the line, remove `//` and beyond; or replace well-formed `/*` and `*/` pairs with ' ', then return true.
 // if it finds non-well formed `/*` following `/*` sequence, it returns false.
 inline bool remove_inline_comments(std::string& line)
 {
@@ -203,11 +212,10 @@ inline bool remove_inline_comments(std::string& line)
 inline bool Loader::recurse_load(const std::string& includePath, SourceFile& file, int level)
 {
     std::ifstream ifs;
-    std::filesystem::path filePath;
-    if( std::filesystem::path(includePath).is_absolute() )
+    std::filesystem::path filePath = includePath;
+    if( filePath.is_absolute() )
     {
         // absolute include path, use it verbatim.
-        filePath = includePath;
         ifs.open(filePath);
         if( !ifs.is_open() )
         {
@@ -218,17 +226,19 @@ inline bool Loader::recurse_load(const std::string& includePath, SourceFile& fil
     else
     {
         // 1. currentDir
-        filePath = this->currentDir / includePath;
+        filePath = std::filesystem::absolute(this->currentDir / includePath);
         ifs.open(filePath);
         if( !ifs.is_open() )
         {
             // 2. try includeDirs
             for(const auto& dir : extraIncludeDirs)
             {
-                filePath = dir / includePath;
+                filePath = std::filesystem::absolute(dir / includePath);
                 ifs.open(filePath);
                 if( ifs.is_open() )
+                {
                     break;
+                }
             }
         }
         
@@ -247,13 +257,36 @@ inline bool Loader::recurse_load(const std::string& includePath, SourceFile& fil
         }
     }
     
+    // the file has been opened.
+    if( mapIncludedFiles.find(filePath.string()) != mapIncludedFiles.end() )
+    {
+        // the file has been included before. do not process it, or we have duplicated labels and machine codes.
+        std::cout << "Hint: ["<<level<<"] " << "Source was already included: " << filePath << std::endl;
+        file.filePath = filePath;
+        file.lines.clear();
+        return true;    // skip the lines in this file.
+    }
+    mapIncludedFiles[filePath.string()] = true;
+
+    // load ifstream as istream.
+    return load_istream(filePath.string(), ifs, file, level,
+                        // if load_istream encounters #include, this function below will be called to handle that.
+                        [this](const std::string& includePath, SourceFile& file, int level){
+                            return this->recurse_load(includePath, file, level);
+                        }
+    );
+}
+
+template<class FO>
+inline bool Loader::load_istream(const std::string& filePath, std::istream& is, SourceFile& file, int level, FO inclusionHandler)
+{
     file.filePath = filePath;
     file.lines.clear();
     
     std::string original, regularized;
     bool multiline_comment_open = false;
     int number = 1;
-    while( std::getline(ifs, original) )
+    while( std::getline(is, original) )
     {
         regularized = original;
         
@@ -310,7 +343,7 @@ inline bool Loader::recurse_load(const std::string& includePath, SourceFile& fil
             }
         }
 
-        //==== Now regularized is striped of comments.
+        //==== Now regularized is stripped of comments.
         //==== Take care of #include.
         std::string includeFilePath;    // will be non-empty if this is a valid #include line.
         
@@ -355,7 +388,8 @@ inline bool Loader::recurse_load(const std::string& includePath, SourceFile& fil
         if( ! includeFilePath.empty() )
         {
             inclusion = std::make_unique<SourceFile>();
-            if( !recurse_load(includeFilePath, *inclusion, level+1) )
+            //if( !recurse_load(includeFilePath, *inclusion, level+1) )
+            if( !inclusionHandler(includeFilePath, *inclusion, level+1) )
             {
                 std::cout << "["<<level<<"] " << "At: " << filePath << ", Line: " << number << std::endl
                     <<"    " << original << std::endl;
@@ -363,7 +397,7 @@ inline bool Loader::recurse_load(const std::string& includePath, SourceFile& fil
             }
         }
         
-        CodeLine line{number, original, regularized, {}, std::move(inclusion)};
+        CodeLine line{ number, original, regularized, std::move(inclusion), {} };
         file.lines.push_back(std::move(line));
         
         ++number;
@@ -374,6 +408,19 @@ inline bool Loader::recurse_load(const std::string& includePath, SourceFile& fil
 bool Loader::load(const std::string& filePath, SourceFile& file)
 {
     return recurse_load(filePath, file, 0);
+}
+
+inline bool    Loader::loadFromString(const std::string& sourceCodeContents, SourceFile& file)
+{
+    std::istringstream ss(sourceCodeContents);
+    return load_istream("<<DUMMY_MEMORY>>", ss, file, 0,
+                      // if load_istream encounters #include, this function below will be called to handle that.
+                      [](const std::string& includePath, SourceFile& file, int level){
+                            assert(false);
+                            std::cout << "["<<level<<"] " << "<<DUMMY_MEMORY>> source code cannot handle #include: " << includePath << std::endl;
+                            return false;
+                      }
+    );
 }
 
 //==============================================================================================================================
