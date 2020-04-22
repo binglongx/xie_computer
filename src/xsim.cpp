@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "ref.h"
+#include "parser.h"
 
 using namespace std;
 
@@ -87,7 +88,6 @@ bool run_instruction(Instruction instruction, RegisterFile& regs, RAM& ram)
     int flag = (instruction >> 23) & 0x0001;
     int operand1 = (instruction >> 16) & 0x7F;
     int operand2 = instruction & 0xffff;
-
     Opcode opc = (Opcode)opcode;
     short num = operand2;
     short* reg1 = regs.getRegister(operand1);
@@ -168,7 +168,7 @@ bool run_instruction(Instruction instruction, RegisterFile& regs, RAM& ram)
             break;
         
         case Opcode::JPE:
-            if ((regs.SR & 0x03) != 0x01)
+            if ((regs.SR & 0x03) == 0x01)
                 regs.PC = num;
             else
                 regs.PC += 4;
@@ -217,9 +217,32 @@ bool run_instruction(Instruction instruction, RegisterFile& regs, RAM& ram)
             break;
             
         case Opcode::KBD:
+        {
+            string kbd_input;
+            cin >> kbd_input;
+            *ram.access_short(0x4000) = kbd_input.length();
+            for (int c_ind = 0; c_ind<kbd_input.length(); c_ind++)
+                *ram.access_byte(0x4002 + c_ind) = kbd_input.at(c_ind);
             break;
+        }
         case Opcode::DSP:
+            for(int i=0; i<25; ++i)
+            {
+                for(int j=0; j<80; ++j)
+                {
+                    cout << *ram.access_byte(0x3000 + i*80 + j);
+                }
+                cout << endl;
+            }
             break;
+        case Opcode::DPL:
+        {
+            short length = *ram.access_short(num);
+            char* s = ram.access_byte(num+2);
+            string str(s, length);
+            cout << str;
+            break;
+        }
     }
     regs.PC += 4;
     return false;
@@ -227,10 +250,18 @@ bool run_instruction(Instruction instruction, RegisterFile& regs, RAM& ram)
 
 int main(int argc, const char** argv)
 {
-    if( argc != 2)
+    if( argc != 2 && argc != 3 )
     {
-        cout << "Usage: " << argv[0] << " [xasm_binary_filepath]" << endl;
+        cout << "Usage: " << argv[0] << " <xasm_binary_filepath> [suppress_debugging_info]" << endl;
         return -1;
+    }
+    
+    bool suppress_debugging_info = false;
+    if( argc==3 )
+    {
+        string s = argv[2];
+        if( upper(s)=="TRUE" )
+            suppress_debugging_info = true;
     }
 
     string filepath = argv[1];
@@ -260,26 +291,31 @@ int main(int argc, const char** argv)
     }
     f.read(ram.access_byte(MACHINE_CODE_START), fileLength);
     f.close();
-    cout << "Bin file read size: " << fileLength << endl;
-    for(short index = 0; index<fileLength; index += 4)
+    if( !suppress_debugging_info )
     {
-        short pc = MACHINE_CODE_START + index;
-        cout << " Instruction @" << integer_as_hex(pc) << " " << integer_as_hex(ram.fetch_instruction(pc)) << endl;
+        cout << "Bin file read size: " << fileLength << endl;
+        for(short index = 0; index<fileLength; index += 4)
+        {
+            short pc = MACHINE_CODE_START + index;
+            cout << " Instruction @" << integer_as_hex(pc) << " " << integer_as_hex(ram.fetch_instruction(pc)) << endl;
+        }
     }
     /*
     *ram.access_byte(0x3000) = '0';
-    *ram.access_byte(0x3001) = 'a';
-    *ram.access_byte(0x3002) = 'b';
-    *ram.access_byte(0x3003) = 'c';
-    *ram.access_byte(0x3004) = 'd';
-    *ram.access_byte(0x3005) = 'e';
+    *ram.access_byte(0x3001) = '1';
+    *ram.access_byte(0x3002) = '2';
+    *ram.access_byte(0x3003) = '3';
+    *ram.access_byte(0x3004) = '4';
+    *ram.access_byte(0x3005) = '5';
     */
-    *ram.access_short(0x4000) = 1;
+    /*
+    *ram.access_short(0x4000) = 5;
     *ram.access_byte(0x4002) = '0';
     *ram.access_byte(0x4003) = '9';
     *ram.access_byte(0x4004) = '9';
     *ram.access_byte(0x4005) = '9';
     *ram.access_byte(0x4006) = '9';
+    */
     // boot our XIE computer
     regs.PC = MACHINE_CODE_START;
     regs.SP = 0x2000;
@@ -287,32 +323,22 @@ int main(int argc, const char** argv)
     while(true)
     {
         int32_t instruction = ram.fetch_instruction(regs.PC);
-        regs.print(); cout<<endl;
-        cout << " Instruction @" << integer_as_hex(regs.PC) << " " << integer_as_hex(instruction) << "  // " << disasemble_machine_code(instruction) << endl;
+        if( !suppress_debugging_info )
+        {
+            regs.print(); cout<<endl;
+            cout << " Instruction @" << integer_as_hex(regs.PC) << " " << integer_as_hex(instruction) << "  // " << disasemble_machine_code(instruction) << endl;
+        }
         bool halt = run_instruction(instruction, regs, ram);
         if (halt)
             break;
     }
 
-    for(int i=0; i<5; ++i)
-        cout << dec << *ram.access_short(i*2) << " ";
     cout << endl;
-
-    // show display
-    cout << endl;
-    cout << "This is our display: ------------------>>>";
-    cout << endl;
-    for(int i=0; i<25; ++i)
+    if( !suppress_debugging_info )
     {
-        for(int j=0; j<80; ++j)
-        {
-            cout << *ram.access_byte(0x3000 + i*80 + j);
-        }
+        for(int i=0; i<5; ++i)
+            cout << dec << *ram.access_short(i*2) << " ";
         cout << endl;
     }
-    cout << "<<<---------------------------------------";
-    cout << endl;
-
-
     return 0;
 }

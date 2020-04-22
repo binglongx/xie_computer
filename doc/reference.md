@@ -92,9 +92,11 @@ POP     reg             // load [SP] to reg; SP increases by 2.
 ```
 
 // IO
-```
+```c++
 KBD                     // wait for user enter a line. will get xstring at input area
 DSP                     // update screen with display area contents
+DPL     [mem]           // take xstring from memory location and add output
+DPL     [reg]           // take xstring from memory location and add output
 ```
 
 Machine Code Definition
@@ -159,6 +161,9 @@ HLT 37
 PSH 40
 POP 41
 
+KBD 70
+DSP 71
+DPL 72
 ```
 // register table 8-bit (hex)
 ```c++

@@ -405,12 +405,12 @@ inline bool Loader::load_istream(const std::string& filePath, std::istream& is, 
     return true;
 }
 
-bool Loader::load(const std::string& filePath, SourceFile& file)
+inline bool Loader::load(const std::string& filePath, SourceFile& file)
 {
     return recurse_load(filePath, file, 0);
 }
 
-inline bool    Loader::loadFromString(const std::string& sourceCodeContents, SourceFile& file)
+inline bool Loader::loadFromString(const std::string& sourceCodeContents, SourceFile& file)
 {
     std::istringstream ss(sourceCodeContents);
     return load_istream("<<DUMMY_MEMORY>>", ss, file, 0,
@@ -430,7 +430,7 @@ inline bool    Loader::loadFromString(const std::string& sourceCodeContents, Sou
 // input tokens must have stripped away comments
 // return non-empty label string excluding ':' if this line has a leading label
 // tokens will not include label after calling this function.
-bool detect_and_remove_label_for_line(std::vector<std::string>& tokens, std::string& label)
+inline bool detect_and_remove_label_for_line(std::vector<std::string>& tokens, std::string& label)
 {
     if (tokens.size()>0 && tokens.front().back()==':')
     {

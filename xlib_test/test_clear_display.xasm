@@ -1,0 +1,5 @@
+    CLL [clear_display]
+    DSP
+    HLT
+
+#include "clear_display.xasm"

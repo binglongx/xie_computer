@@ -1,0 +1,7 @@
+    MOV RC, 396
+    MOV RD, 0x2FFE
+    CLL [short_to_xstring]
+    DSP
+    HLT
+
+#include "short_to_xstring.xasm"

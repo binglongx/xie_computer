@@ -1,0 +1,8 @@
+    MOV RC, 'A'
+    MOV RD, 0x3000
+    MOV RE, 2000
+    CLL [fill_char]
+    DSP
+    HLT
+
+#include "fill_char.xasm"

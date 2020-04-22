@@ -1,0 +1,33 @@
+// reverse the string in place.
+// Input parameters:
+//   RC: number of chars
+//   RD: location of first char
+// Example usage:
+//   MOV RC, 3
+//   MOV RD, 0x3000
+//   CLL [reverse_string]
+reverse_string:
+    PSH RB
+    PSH RE
+    PSH RA
+    PSH RF
+    MOV RB, RC
+    DIV RB, 2
+    ADD RC, RD
+    SUB RC, 1
+    MOV RE, 0
+loop_reverse_string:
+    LDB RF, [RD]
+    LDB RA, [RC]
+    STB RF, [RC]
+    STB RA, [RD]
+    INC RD
+    DEC RC
+    INC RE
+    CMP RE, RB
+    JPL [loop_reverse_string]
+    POP RF
+    POP RA
+    POP RE
+    POP RB
+    RET

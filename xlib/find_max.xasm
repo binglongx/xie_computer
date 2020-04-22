@@ -1,0 +1,34 @@
+// find maximum of an array of shorts
+// Input parameters:
+//   RC: location of first value
+//   RD: how many elements
+// Return value:
+//   RA: maximum value
+// Example usage:
+//   MOV RC, 100
+//   MOV RD, 10
+//   CLL [find_max]
+find_max:
+    PSH RE
+    PSH RB
+    LDS RA, [RC]
+    MOV RE, RC
+    MUL RD, 2
+    ADD RE, RD
+    SUB RE, 2
+find_max__loop:
+    LDS RB, [RC]
+    CMP RA, RB
+    JPL [find_max__more]
+    JMP [find_max__continue]
+find_max__more:
+    MOV RA, RB
+find_max__continue:
+    CMP RC, RE
+    JPE [find_max__end]
+    ADD RC, 2
+    JMP [find_max__loop]
+find_max__end:
+    POP RB
+    POP RE
+    RET

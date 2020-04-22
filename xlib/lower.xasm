@@ -1,0 +1,17 @@
+// if character is uppercase then make lower
+// Input parameters:
+//   RC: character to lower
+// Example usage:
+//   MOV RC, 'A'
+//   CLL [lower]
+lower:
+    CMP RC, '['
+    JPL [less_lower]
+    JMP [ret_lower]
+ret_lower:
+    RET
+less_lower:
+    CMP RC, 'A'
+    JPL [ret_lower]
+    ADD RC, 32
+    RET

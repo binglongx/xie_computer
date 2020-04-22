@@ -1,0 +1,10 @@
+    KBD
+    MOV RC, 0x4002
+    MOV RD, RC
+    LDS RE, [0x4000]
+    ADD RD, RE
+    DEC RD
+    CLL [string_to_short]
+    HLT
+
+#include "string_to_short.xasm"

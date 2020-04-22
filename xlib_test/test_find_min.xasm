@@ -1,0 +1,20 @@
+    MOV RA, 5
+    MOV RB, 0
+    STS RA, [RB]
+    INC RA
+    ADD RB, 2
+    STS RA, [RB]
+    INC RA
+    ADD RB, 2
+    STS RA, [RB]
+    INC RA
+    ADD RB, 2
+    STS RA, [RB]
+    INC RA
+    ADD RB, 2
+    MOV RC, 0
+    MOV RD, 4
+    CLL [find_min]
+    HLT
+
+#include "find_min.xasm"
