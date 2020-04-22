@@ -154,7 +154,7 @@ bool assemble(SourceFile& source, std::vector<int>& instructions)
                 }
                 operand2 = static_cast<int>(reg_it->second);
             }
-            else if( instr=="JPE" || instr=="JPL" || instr=="JPG" || instr=="JMP"|| instr=="CLL" )
+            else if( instr=="JPE" || instr=="JPL" || instr=="JPG" || instr=="JMP" || instr=="CLL")
             {
                 // label, [label], or [reg].
                 auto operand = ops[1];
@@ -186,6 +186,42 @@ bool assemble(SourceFile& source, std::vector<int>& instructions)
                         flag = 1;
                         operand2 = label_it->second;
                     }
+                }
+            }
+            else if( instr=="DPL" )
+            {
+                // [mem], or [reg].
+                auto operand = ops[1];
+                if( operand.size()>=2 && operand.front()=='[' && operand.back()==']' )
+                {
+                    operand.pop_back();
+                    operand.erase(0, 1);
+                    if(operand.empty())
+                    {
+                        std::cout << "Syntax error: memory location needed: " << filePath << ", Line: " << line.number << std::endl
+                            <<"    " << line.original << std::endl;
+                        return false;
+                    }
+
+                    auto reg = upper(operand);
+                    auto reg_it = register_map.find(reg);
+                    if( reg_it != register_map.end() )
+                    {
+                        operand2 = static_cast<int>(reg_it->second);
+                    }
+                    else
+                    {
+                        // must be num for memory
+                        // TODO: check if operand is realy a number literal.
+                        flag = 1;
+                        operand2 = string_to_number(operand);
+                    }
+                }
+                else
+                {
+                    std::cout << "Syntax error: memory location needed: " << filePath << ", Line: " << line.number << std::endl
+                        <<"    " << line.original << std::endl;
+                    return false;
                 }
             }
             else if( instr=="PSH" )

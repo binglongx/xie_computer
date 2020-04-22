@@ -42,6 +42,7 @@ enum class Opcode : uint8_t
     
     KBD = 0x70,
     DSP = 0x71,
+    DPL = 0x72
 };
 
 enum class Register : uint8_t
@@ -63,7 +64,7 @@ struct InstructionData
 {
     Opcode  opcode;
     int     operandCount;   // 2, 1, 0
-    bool    operand2Memory; // if having operand, is operand2 true for load/store/jump/call instructions: need memory location (i.e., [])
+    bool    operand2Memory; // if having operand, is operand2 true for load/store/jump/call/dpl instructions: need memory location (i.e., [])
 };
 
 inline const std::map<std::string, InstructionData>& getInstructionMap()
@@ -108,6 +109,7 @@ inline const std::map<std::string, InstructionData>& getInstructionMap()
         
         {"KBD", {Opcode::KBD, 0, false}},
         {"DSP", {Opcode::DSP, 0, false}},
+        {"DPL", {Opcode::DPL, 1, true }}
     };
     return s_instruction_map;
 }
